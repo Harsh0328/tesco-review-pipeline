@@ -4,17 +4,16 @@ import glob
 from email.message import EmailMessage
 from datetime import datetime
 
-# ══════════════════════════════════════════════════════════════════════════
-# EMAIL CONFIGURATION (Loaded from environment variables)
-# ══════════════════════════════════════════════════════════════════════════
-
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.office365.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")
-SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")
-
-# Comma-separated list of recipients
-RECIPIENTS = os.environ.get("RECIPIENT_EMAILS", "qa-team@cranswick.example.com,logistics@cranswick.example.com")
+def load_env():
+    """Manually parse .env file so we don't need third-party dotenv library"""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, val = line.split("=", 1)
+                    os.environ.setdefault(key.strip(), val.strip())
 
 
 def get_latest_report(output_dir):
@@ -28,8 +27,16 @@ def get_latest_report(output_dir):
 
 def send_weekly_email(report_path):
     """Sends the report via email using SMTP."""
+    load_env()
+    
+    SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.office365.com")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")
+    SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")
+    RECIPIENTS = os.environ.get("RECIPIENT_EMAILS", "")
+
     if not SENDER_EMAIL or not SENDER_PASSWORD:
-        print("⚠️  Email delivery skipped: SMTP credentials (SENDER_EMAIL, SENDER_PASSWORD) not configured.")
+        print("⚠️  Email delivery skipped: SMTP credentials (SENDER_EMAIL, SENDER_PASSWORD) not configured in .env file.")
         return False
 
     print(f"\n📧 Preparing to email report: {os.path.basename(report_path)}")
