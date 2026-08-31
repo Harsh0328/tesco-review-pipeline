@@ -129,6 +129,9 @@ def run_interception_pipeline():
         page = context.new_page()
         Stealth().apply_stealth_sync(page)
 
+        # V2 OPTIMIZATION: Block all heavy visual resources for blazing fast page loads
+        page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "media", "font", "stylesheet"] else route.continue_())
+
         for idx, product in enumerate(products, 1):
             name = product.get("Product Name", "Unknown")
             nav  = product.get("NAV Code", "N/A")
@@ -142,111 +145,82 @@ def run_interception_pipeline():
                 continue
 
             intercepted_data = []
-            api_state = {"key": None, "total": 0, "tpnb": None}
-
-            # --- Network listeners ---
-            def handle_request(request):
-                if "xapi.tesco.com" in request.url and request.method == "POST":
-                    key = request.headers.get("x-apikey") or request.headers.get("x-api-key")
-                    if key:
-                        api_state["key"] = key
-                    try:
-                        post_json = request.post_data_json
-                        if isinstance(post_json, list):
-                            for op in post_json:
-                                if op.get("operationName") == "GetReviews":
-                                    tpnb = op.get("variables", {}).get("tpnb")
-                                    if tpnb:
-                                        api_state["tpnb"] = tpnb
-                    except Exception:
-                        pass
-
-            def handle_response(response):
-                if "xapi.tesco.com" in response.url and response.request.method == "POST":
-                    try:
-                        json_data = response.json()
-                        if isinstance(json_data, list) and len(json_data) > 0:
-                            data_block = json_data[0].get('data', {})
-                            if 'reviews' in data_block and 'entries' in data_block['reviews']:
-                                info = data_block['reviews'].get('info', {})
-                                api_state["total"] = max(api_state["total"], info.get('total', 0))
-                                entries = data_block['reviews']['entries']
-                                if entries:
-                                    intercepted_data.extend(entries)
-                    except Exception:
-                        pass
-
-            page.on("request", handle_request)
-            page.on("response", handle_response)
-
+            
             try:
-                # 1. Load page to generate Akamai tokens
+                # 1. Load HTML only (milliseconds)
                 page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                page.wait_for_timeout(3000)
+                
+                # 2. Extract TPNB instantly from raw HTML
+                html = page.content()
+                tpnb_match = re.search(r'tpnb[^\d]*(\d{5,9})', html, re.IGNORECASE)
+                
+                if not tpnb_match:
+                    print(f"   ⚠️ Could not find internal TPNB ID on page. Skipping.")
+                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": "⚠️ No TPNB found"})
+                    continue
+                    
+                tpnb = tpnb_match.group(1)
+                
+                # 3. Direct API Injection (Bypasses scrolling/waiting entirely)
+                # First request to get offset 0 and the Total count
+                def fetch_graphql(offset):
+                    payload = [{
+                        "operationName": "GetReviews",
+                        "extensions": {"mfeName": "mfe-pdp"},
+                        "variables": {"tpnb": tpnb, "offset": offset, "count": 10},
+                        "query": "query GetReviews($tpnb: String, $offset: Int, $count: Int) { reviews(tpnb: $tpnb, offset: $offset, count: $count) { info { total } entries { rating { value } summary text submissionDateTime } } }"
+                    }]
+                    return context.request.post(
+                        "https://xapi.tesco.com/",
+                        headers={"x-apikey": FALLBACK_API_KEY, "content-type": "application/json", "origin": "https://www.tesco.com"},
+                        data=json.dumps(payload)
+                    )
 
-                # Dismiss cookie banner if present
-                for sel in ["button:has-text('Accept all')", "button:has-text('Accept')"]:
-                    btn = page.query_selector(sel)
-                    if btn and btn.is_visible():
-                        btn.click()
-                        page.wait_for_timeout(1000)
-                        break
-
-                # 2. Scroll to trigger reviews API call
-                page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.7)")
-                page.wait_for_timeout(5000)
-
-                if not api_state["key"]:
-                    api_state["key"] = FALLBACK_API_KEY
-
-                # 3. Fetch remaining pages via background API calls
-                if api_state["key"] and api_state["tpnb"] and api_state["total"] > 10:
-                    total = api_state["total"]
-                    tpnb  = api_state["tpnb"]
-
+                resp = fetch_graphql(0)
+                if not resp.ok:
+                    print(f"   ❌ API Rejected request (Status {resp.status}). Akamai block likely.")
+                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": f"❌ API Block ({resp.status})"})
+                    continue
+                    
+                data = resp.json()
+                if not data or not data[0].get('data', {}).get('reviews'):
+                    print(f"   — No reviews available for this product.")
+                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": 0, "Weekly Reviews": 0, "Status": "— No reviews"})
+                    continue
+                
+                total = data[0]['data']['reviews']['info'].get('total', 0)
+                entries = data[0]['data']['reviews'].get('entries', [])
+                intercepted_data.extend(entries)
+                
+                # 4. Fetch remaining pages in background
+                if total > 10:
                     for offset in range(10, total, 10):
                         try:
-                            payload = [{
-                                "operationName": "GetReviews",
-                                "extensions": {"mfeName": "mfe-pdp"},
-                                "variables": {"tpnb": tpnb, "offset": offset, "count": 10},
-                                "query": "query GetReviews($tpnb: String, $offset: Int, $count: Int) { reviews(tpnb: $tpnb, offset: $offset, count: $count) { entries { rating { value } summary text submissionDateTime } } }"
-                            }]
-                            resp = context.request.post(
-                                "https://xapi.tesco.com/",
-                                headers={"x-apikey": api_state["key"], "content-type": "application/json", "origin": "https://www.tesco.com"},
-                                data=json.dumps(payload)
-                            )
+                            resp = fetch_graphql(offset)
                             if resp.ok:
-                                data = resp.json()
-                                if data and len(data) > 0 and 'data' in data[0]:
-                                    entries = data[0]['data']['reviews'].get('entries', [])
-                                    intercepted_data.extend(entries)
-
-                                    # Early exit: if ALL reviews on this page are older than cutoff, stop
-                                    old_count = 0
-                                    for e in entries:
-                                        try:
-                                            d = datetime.strptime(e.get('submissionDateTime', '')[:10], "%Y-%m-%d")
-                                            if d < cutoff_date:
-                                                old_count += 1
-                                        except Exception:
-                                            pass
-                                    if entries and old_count == len(entries):
+                                offset_data = resp.json()
+                                if offset_data and offset_data[0].get('data'):
+                                    batch = offset_data[0]['data']['reviews'].get('entries', [])
+                                    intercepted_data.extend(batch)
+                                    
+                                    # EARLY EXIT: Check if entire batch is older than 7 days
+                                    old_count = sum(1 for e in batch if (
+                                        datetime.strptime(e.get('submissionDateTime', '')[:10], "%Y-%m-%d") < cutoff_date 
+                                        if e.get('submissionDateTime') else False
+                                    ))
+                                    if batch and old_count == len(batch):
                                         break
-
-                            page.wait_for_timeout(1000)
                         except Exception:
                             pass
-
-                # 4. Filter to weekly window and triage
+                            
+                # 5. Filter to weekly window and triage
                 weekly_count = 0
                 for entry in intercepted_data:
                     date_str = entry.get('submissionDateTime', '')[:10]
                     try:
                         review_date = datetime.strptime(date_str, "%Y-%m-%d")
                         if review_date < cutoff_date:
-                            continue  # Skip old reviews
+                            continue
                     except Exception:
                         continue
 
@@ -275,15 +249,12 @@ def run_interception_pipeline():
                     weekly_count += 1
 
                 status = f"✅ {weekly_count} new" if weekly_count > 0 else "— No new reviews"
-                print(f"   Total: {api_state['total']}  |  This week: {weekly_count}  |  {status}")
-                product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": api_state['total'], "Weekly Reviews": weekly_count, "Status": status})
+                print(f"   Total: {total}  |  This week: {weekly_count}  |  {status}")
+                product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": total, "Weekly Reviews": weekly_count, "Status": status})
 
             except Exception as e:
                 print(f"   ❌ Error: {e}")
-                product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": f"❌ {str(e)[:40]}"})
-            finally:
-                page.remove_listener("request", handle_request)
-                page.remove_listener("response", handle_response)
+                product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": f"❌ Error"})
 
         browser.close()
 
