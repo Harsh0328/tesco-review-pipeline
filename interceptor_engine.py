@@ -197,8 +197,7 @@ def run_interception_pipeline():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     products = load_products()
-    # Strip time to ensure a clean midnight-to-midnight 7-day calendar window
-    cutoff_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=REPORT_WINDOW_DAYS)
+    cutoff_date = datetime.now() - timedelta(days=REPORT_WINDOW_DAYS)
     cutoff_str = cutoff_date.strftime("%Y-%m-%d")
     today_str  = datetime.today().strftime("%Y-%m-%d")
 
