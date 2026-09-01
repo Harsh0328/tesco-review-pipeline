@@ -100,7 +100,36 @@ def load_products():
         template_df.to_excel(INPUT_FILE, index=False)
         return template_df.to_dict('records')
 
-    df = pd.read_excel(INPUT_FILE)
+    # Load with openpyxl to extract hidden hyperlinks
+    import openpyxl
+    wb = openpyxl.load_workbook(INPUT_FILE)
+    ws = wb.active
+    
+    # Map headers to column indices
+    headers = {cell.value: i for i, cell in enumerate(ws[1])}
+    
+    data = []
+    for row in ws.iter_rows(min_row=2):
+        # Stop at empty rows
+        if not any(cell.value for cell in row):
+            continue
+            
+        nav = row[headers.get('NAV Code', 0)].value if 'NAV Code' in headers else ""
+        name = row[headers.get('Product Name', 1)].value if 'Product Name' in headers else ""
+        
+        # Safely extract the hidden hyperlink or fallback to the cell text
+        url_cell = row[headers.get('Tesco URL', 2)] if 'Tesco URL' in headers else None
+        url = ""
+        if url_cell:
+            if url_cell.hyperlink and url_cell.hyperlink.target:
+                url = url_cell.hyperlink.target
+            else:
+                url = str(url_cell.value)
+                
+        data.append({"NAV Code": nav, "Product Name": name, "Tesco URL": url})
+
+    df = pd.DataFrame(data)
+    
     # Drop any junk columns
     df = df[[c for c in df.columns if not c.startswith("Unnamed")]]
     # Strip Google Analytics tracking from URLs
