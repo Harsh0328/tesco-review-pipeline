@@ -1,0 +1,234 @@
+2026-09-01 09:44:59  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:44:59  INFO        CRANSWICK / TESCO — WEEKLY REVIEW PIPELINE
+2026-09-01 09:44:59  INFO        Report Window: 2026-08-25  →  2026-09-01  (7 days)
+2026-09-01 09:44:59  INFO        Products to scan: 51
+2026-09-01 09:44:59  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:45:06  INFO      [1/51] Core British Crumbed Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [2/51] Core British Crumbed Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [3/51] Core British Roast Beef 90g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [4/51] Core British Wafer Thin Roast Chicken 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [5/51] Core British Roast Chicken 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [6/51] Core British Roast Chicken & Stuffing 100g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [7/51] Core EU Honey Roast Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [8/51] Core EU Wafer Thin Honey Roast Ham 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [9/51] Core British Honey Roast Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [10/51] Core British Honey Roast Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [11/51] Core British Wafer Thin Honey Roast Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [12/51] Core Tesco British Pastrami 100g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [13/51] Core EU Tesco Wafer Thin Smoked Ham 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [14/51] Core EU Pork and Egg Roll 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [15/51] Eastman's Cooked Ham 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [16/51] Eastman's Wafer Thin Cooked Chicken 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [17/51] Core British Cooked Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [18/51] Core EU Garlic Sausage 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [19/51] Core British Smoked Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [20/51] Core British Wafer Thin Smoked Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [21/51] Core British Wafer Thin Cooked Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [22/51] Eastman's Corned Beef 150g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [23/51] Core British Honey & Mustard Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [24/51] Core British Lean Ham On The Bone 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [25/51] Core British Peppered Ham 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [26/51] British Cumberland Sausage Slices 150g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [27/51] Premier Deli Roast Turkey 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [28/51] Eastman's Cooked Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [29/51] Eastman's Wafer Thin Cooked Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [30/51] Eastman's Pork Luncheon Meat 250g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [31/51] Eastman's Chicken Roll 250g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [32/51] Core British Pork Lunch Tongue 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [33/51] Tesco Core British Pork Loin Slices 100g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [34/51] Core British Corned Beef 110g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [35/51] EU Wafer Thin Cooked Ham 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [36/51] EU Cooked Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [37/51] EU Wafer Thin Cooked Ham 400g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [38/51] Tesco Finest Deli Ham On The Bone 200g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [39/51] Tesco Finest Air Dried Cooked Ham 130g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [40/51] Tesco Finest Dry Cured Honey Roast Ham 130
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [41/51] Tesco Finest Dry Cured Oak Smoked Ham 130g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [42/51] Tesco Finest Air Dried Crumbed Ham 130g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [43/51] Tesco Finest Dry Cured Old English Ham 130g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [44/51] Tesco Finest Slow Cooked Roast Beef Topside 90g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [45/51] Tesco Finest Deli Ham On The Bone 130g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [46/51] Tesco Finest Deli Herb Crusted Ham Slices 130g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [47/51] Deli Butter Basted Roast Turkey 120g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [48/51] Deli Ox Tongue 100g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [49/51] Deli Corned Beef 140g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [50/51] Tesco Finest Hickory Smoked Brisket 70g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      [51/51] Core EU Cooked Beef 125g
+2026-09-01 09:45:06  WARNING     SKIP: Invalid URL. Check your Excel file.
+2026-09-01 09:45:06  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:45:06  INFO        GENERATING WEEKLY REPORT
+2026-09-01 09:45:06  INFO        Window: 2026-08-25 → 2026-09-01
+2026-09-01 09:45:06  INFO        Reviews found this week: 0
+2026-09-01 09:45:06  INFO        Products scanned: 51
+2026-09-01 09:45:06  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:45:06  INFO        Report saved to: /Users/harsh/Documents/Tesco_Project_Final/Production_Code/output/Tesco_Weekly_Report_2026-09-01.xlsx
+2026-09-01 09:45:06  INFO        Sheet 1 — 'Summary': 51 products scanned
+2026-09-01 09:45:06  INFO        Sheet 2 — 'Reviews': 0 new reviews this week
+2026-09-01 09:46:29  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:46:29  INFO        CRANSWICK / TESCO — WEEKLY REVIEW PIPELINE
+2026-09-01 09:46:29  INFO        Report Window: 2026-08-25  →  2026-09-01  (7 days)
+2026-09-01 09:46:29  INFO        Products to scan: 52
+2026-09-01 09:46:29  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:46:29  INFO      [1/52] Core British Crumbed Ham 400g
+2026-09-01 09:46:31  INFO        Total: 63  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:31  INFO      [2/52] Core British Crumbed Ham 120g
+2026-09-01 09:46:32  INFO        Total: 69  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:32  INFO      [3/52] Core British Roast Beef 90g
+2026-09-01 09:46:34  INFO        Total: 1795  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:34  INFO      [4/52] Core British Wafer Thin Roast Chicken 120g
+2026-09-01 09:46:35  INFO        Total: 43  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:35  INFO      [5/52] Core British Roast Chicken 120g
+2026-09-01 09:46:36  INFO        Total: 63  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:36  INFO      [6/52] Core British Roast Chicken & Stuffing 100g
+2026-09-01 09:46:37  INFO        Total: 61  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:37  INFO      [7/52] Core EU Honey Roast Ham 400g
+2026-09-01 09:46:39  INFO        Total: 152  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:39  INFO      [8/52] Core EU Wafer Thin Honey Roast Ham 125g
+2026-09-01 09:46:40  INFO        Total: 103  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:40  INFO      [9/52] Core British Honey Roast Ham 120g
+2026-09-01 09:46:41  INFO        Total: 73  |  This week: 2  |  ✅ 2 new
+2026-09-01 09:46:41  INFO      [10/52] Core British Honey Roast Ham 400g
+2026-09-01 09:46:42  INFO        Total: 68  |  This week: 1  |  ✅ 1 new
+2026-09-01 09:46:42  INFO      [11/52] Core British Wafer Thin Honey Roast Ham 120g
+2026-09-01 09:46:44  INFO        Total: 72  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:44  INFO      [12/52] Core Tesco British Pastrami 100g
+2026-09-01 09:46:45  INFO        Total: 68  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:45  INFO      [13/52] Core EU Tesco Wafer Thin Smoked Ham 125g
+2026-09-01 09:46:46  INFO        Total: 67  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:46  INFO      [14/52] Core EU Pork and Egg Roll 125g
+2026-09-01 09:46:47  INFO        Total: 44  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:47  INFO      [15/52] Eastman's Cooked Ham 125g
+2026-09-01 09:46:48  INFO        Total: 72  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:48  INFO      [16/52] Eastman's Wafer Thin Cooked Chicken 125g
+2026-09-01 09:46:49  INFO        Total: 84  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:49  INFO      [17/52] Core British Cooked Ham 120g
+2026-09-01 09:46:50  INFO        Total: 80  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:50  INFO      [18/52] Core EU Garlic Sausage 125g
+2026-09-01 09:46:51  INFO        Total: 50  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:51  INFO      [19/52] Core British Smoked Ham 120g
+2026-09-01 09:46:52  INFO        Total: 47  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:52  INFO      [20/52] Core British Wafer Thin Smoked Ham 120g
+2026-09-01 09:46:54  INFO        Total: 50  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:54  INFO      [21/52] Core British Wafer Thin Cooked Ham 120g
+2026-09-01 09:46:55  INFO        Total: 55  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:55  INFO      [22/52] Eastman's Corned Beef 150g
+2026-09-01 09:46:56  INFO        Total: 106  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:56  INFO      [23/52] Core British Honey & Mustard Ham 120g
+2026-09-01 09:46:57  INFO        Total: 61  |  This week: 0  |  — No new reviews
+2026-09-01 09:46:57  INFO      [24/52] Core British Lean Ham On The Bone 120g
+2026-09-01 09:46:58  INFO        Total: 87  |  This week: 1  |  ✅ 1 new
+2026-09-01 09:46:58  INFO      [25/52] Core British Peppered Ham 120g
+2026-09-01 09:46:59  INFO        Total: 51  |  This week: 1  |  ✅ 1 new
+2026-09-01 09:46:59  INFO      [26/52] British Cumberland Sausage Slices 150g
+2026-09-01 09:47:00  INFO        Total: 89  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:00  INFO      [27/52] Premier Deli Roast Turkey 125g
+2026-09-01 09:47:01  INFO        Total: 26  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:01  INFO      [28/52] Eastman's Cooked Ham 400g
+2026-09-01 09:47:02  INFO        Total: 86  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:02  INFO      [29/52] Eastman's Wafer Thin Cooked Ham 400g
+2026-09-01 09:47:03  INFO        Total: 73  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:03  INFO      [30/52] Eastman's Pork Luncheon Meat 250g
+2026-09-01 09:47:04  INFO        Total: 123  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:04  INFO      [31/52] Eastman's Chicken Roll 250g
+2026-09-01 09:47:06  INFO        Total: 51  |  This week: 1  |  ✅ 1 new
+2026-09-01 09:47:06  INFO      [32/52] Core British Pork Lunch Tongue 120g
+2026-09-01 09:47:07  INFO        Total: 72  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:07  INFO      [33/52] Tesco Core British Pork Loin Slices 100g
+2026-09-01 09:47:08  INFO        Total: 60  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:08  INFO      [34/52] Core British Corned Beef 110g
+2026-09-01 09:47:10  INFO        Total: 92  |  This week: 1  |  ✅ 1 new
+2026-09-01 09:47:10  INFO      [35/52] EU Wafer Thin Cooked Ham 125g
+2026-09-01 09:47:10  INFO        Total: 0  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:10  INFO      [36/52] EU Cooked Ham 400g
+2026-09-01 09:47:11  INFO        Total: 3  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:11  INFO      [37/52] EU Wafer Thin Cooked Ham 400g
+2026-09-01 09:47:12  INFO        Total: 3  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:12  INFO      [38/52] Core British Roast Chicken and Stuffing 100g
+2026-09-01 09:47:14  INFO        Total: 5  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:14  INFO      [39/52] Tesco Finest Deli Ham On The Bone 200g
+2026-09-01 09:47:15  INFO        Total: 29  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:15  INFO      [40/52] Tesco Finest Air Dried Cooked Ham 130g
+2026-09-01 09:47:16  INFO        Total: 29  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:16  INFO      [41/52] Tesco Finest Dry Cured Honey Roast Ham 130
+2026-09-01 09:47:17  INFO        Total: 15  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:17  INFO      [42/52] Tesco Finest Dry Cured Oak Smoked Ham 130g
+2026-09-01 09:47:18  INFO        Total: 14  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:18  INFO      [43/52] Tesco Finest Air Dried Crumbed Ham 130g
+2026-09-01 09:47:19  INFO        Total: 89  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:19  INFO      [44/52] Tesco Finest Dry Cured Old English Ham 130g
+2026-09-01 09:47:20  INFO        Total: 24  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:20  INFO      [45/52] Tesco Finest Slow Cooked Roast Beef Topside 90g
+2026-09-01 09:47:21  INFO        Total: 61  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:21  INFO      [46/52] Tesco Finest Deli Ham On The Bone 130g
+2026-09-01 09:47:22  INFO        Total: 50  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:22  INFO      [47/52] Tesco Finest Deli Herb Crusted Ham Slices 130g
+2026-09-01 09:47:23  INFO        Total: 3  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:23  INFO      [48/52] Deli Butter Basted Roast Turkey 120g
+2026-09-01 09:47:24  INFO        Total: 41  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:24  INFO      [49/52] Deli Ox Tongue 100g
+2026-09-01 09:47:25  INFO        Total: 60  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:25  INFO      [50/52] Deli Corned Beef 140g
+2026-09-01 09:47:26  INFO        Total: 1  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:26  INFO      [51/52] Tesco Finest Hickory Smoked Brisket 70g
+2026-09-01 09:47:27  INFO        Total: 0  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:27  INFO      [52/52] Core EU Cooked Beef 125g
+2026-09-01 09:47:29  INFO        Total: 30  |  This week: 0  |  — No new reviews
+2026-09-01 09:47:29  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:47:29  INFO        GENERATING WEEKLY REPORT
+2026-09-01 09:47:29  INFO        Window: 2026-08-25 → 2026-09-01
+2026-09-01 09:47:29  INFO        Reviews found this week: 7
+2026-09-01 09:47:29  INFO        Products scanned: 52
+2026-09-01 09:47:29  INFO      ═════════════════════════════════════════════════════════════════
+2026-09-01 09:47:29  INFO        Report saved to: /Users/harsh/Documents/Tesco_Project_Final/Production_Code/output/Tesco_Weekly_Report_2026-09-01.xlsx
+2026-09-01 09:47:29  INFO        Sheet 1 — 'Summary': 52 products scanned
+2026-09-01 09:47:29  INFO        Sheet 2 — 'Reviews': 7 new reviews this week

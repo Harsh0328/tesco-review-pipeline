@@ -42,13 +42,17 @@ def send_weekly_email(report_path):
     print(f"\n📧 Preparing to email report: {os.path.basename(report_path)}")
     
     msg = EmailMessage()
-    msg['Subject'] = f"Automated Tesco Review Intelligence Report - {datetime.today().strftime('%Y-%m-%d')}"
+    
+    is_monthly = "Monthly_Report" in report_path
+    report_type = "Monthly" if is_monthly else "Weekly/Rolling"
+    
+    msg['Subject'] = f"Automated Tesco Review Intelligence - {report_type} Report"
     msg['From'] = SENDER_EMAIL
     msg['To'] = RECIPIENTS
 
     body = f"""Hello Team,
 
-Attached is the automated Tesco Customer Review Intelligence Report for the past 7 days.
+Attached is the automated Tesco Customer Review Intelligence Report for the {report_type} window.
 
 This report contains:
 - An Executive Summary of all products monitored.

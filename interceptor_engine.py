@@ -28,9 +28,6 @@ OUTPUT_DIR  = os.path.join(SCRIPT_DIR, "output")
 LOG_DIR     = os.path.join(SCRIPT_DIR, "logs")
 INPUT_FILE  = os.path.join(INPUT_DIR, "products_to_track.xlsx")
 
-# How many days back to include in the weekly report
-REPORT_WINDOW_DAYS = 7
-
 # Max retries per product if a transient error occurs
 MAX_RETRIES = 3
 
@@ -49,7 +46,6 @@ LOGISTICS_KEYWORDS = [
 ]
 
 # Words that cause false positives with simple substring matching
-# These are checked with word-boundary regex instead
 BOUNDARY_QA_KEYWORDS = ['off']
 BOUNDARY_LOGISTICS_KEYWORDS = []
 
@@ -66,18 +62,15 @@ def setup_logging():
     logger = logging.getLogger("tesco_pipeline")
     logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers on re-runs
     if logger.handlers:
         return logger
 
     formatter = logging.Formatter("%(asctime)s  %(levelname)-8s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
-    # Console handler
     console = logging.StreamHandler(sys.stdout)
     console.setFormatter(formatter)
     logger.addHandler(console)
 
-    # File handler
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -94,8 +87,7 @@ def load_products():
     os.makedirs(INPUT_DIR, exist_ok=True)
     if not os.path.exists(INPUT_FILE):
         template_df = pd.DataFrame([
-            {"NAV Code": "10011247", "Product Name": "Example Product 1", "Tesco URL": "https://www.tesco.com/shop/en-GB/products/316177140"},
-            {"NAV Code": "10100822", "Product Name": "Example Product 2", "Tesco URL": "https://www.tesco.com/shop/en-GB/products/303881155"}
+            {"NAV Code": "10011247", "Product Name": "Example Product 1", "Tesco URL": "https://www.tesco.com/shop/en-GB/products/276414756"}
         ])
         template_df.to_excel(INPUT_FILE, index=False)
         return template_df.to_dict('records')
@@ -105,19 +97,16 @@ def load_products():
     wb = openpyxl.load_workbook(INPUT_FILE)
     ws = wb.active
     
-    # Map headers to column indices
     headers = {cell.value: i for i, cell in enumerate(ws[1])}
     
     data = []
     for row in ws.iter_rows(min_row=2):
-        # Stop at empty rows
         if not any(cell.value for cell in row):
             continue
             
         nav = row[headers.get('NAV Code', 0)].value if 'NAV Code' in headers else ""
         name = row[headers.get('Product Name', 1)].value if 'Product Name' in headers else ""
         
-        # Safely extract the hidden hyperlink or fallback to the cell text
         url_cell = row[headers.get('Tesco URL', 2)] if 'Tesco URL' in headers else None
         url = ""
         if url_cell:
@@ -130,11 +119,8 @@ def load_products():
 
     df = pd.DataFrame(data)
     
-    # Drop any junk columns
     df = df[[c for c in df.columns if not c.startswith("Unnamed")]]
-    # Strip Google Analytics tracking from URLs
     df['Tesco URL'] = df['Tesco URL'].apply(lambda u: re.sub(r'\?.*$', '', str(u).strip()))
-    # Remove duplicates
     df = df.drop_duplicates(subset=['Tesco URL'])
     return df.to_dict('records')
 
@@ -144,12 +130,10 @@ def load_products():
 # ══════════════════════════════════════════════════════════════════════════
 
 def triage_review(text: str) -> tuple[str, str]:
-    """Classify review text into QA Risk, Logistics Issue, or None."""
     if not text:
         return "None", ""
     text_lower = text.lower()
 
-    # Standard substring keywords
     for kw in QA_KEYWORDS:
         if kw in text_lower:
             return "🔴 Critical QA Risk", kw
@@ -157,7 +141,6 @@ def triage_review(text: str) -> tuple[str, str]:
         if kw in text_lower:
             return "🟠 Logistics Issue", kw
 
-    # Word-boundary keywords (avoids false positives like "offer", "coffee")
     for kw in BOUNDARY_QA_KEYWORDS:
         if re.search(rf'\b{kw}\b', text_lower):
             return "🔴 Critical QA Risk", kw
@@ -173,7 +156,6 @@ def triage_review(text: str) -> tuple[str, str]:
 # ══════════════════════════════════════════════════════════════════════════
 
 def fetch_reviews_page(context, tpnb, offset):
-    """Fetch a single page of reviews from the Tesco GraphQL API."""
     payload = [{
         "operationName": "GetReviews",
         "extensions": {"mfeName": "mfe-pdp"},
@@ -191,22 +173,42 @@ def fetch_reviews_page(context, tpnb, offset):
 # CORE ENGINE
 # ══════════════════════════════════════════════════════════════════════════
 
-def run_interception_pipeline():
+def run_interception_pipeline(days_override=None, is_monthly=False):
     log = setup_logging()
-
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
     products = load_products()
-    cutoff_date = datetime.now() - timedelta(days=REPORT_WINDOW_DAYS)
-    cutoff_str = cutoff_date.strftime("%Y-%m-%d")
-    today_str  = datetime.today().strftime("%Y-%m-%d")
+
+    # Determine date windows based on mode
+    today = datetime.now()
+    
+    if is_monthly:
+        # Calculate strict previous calendar month (e.g., Aug 1 to Aug 31)
+        first_of_this_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = first_of_this_month
+        last_day_prev_month = first_of_this_month - timedelta(days=1)
+        cutoff_date = last_day_prev_month.replace(day=1)
+        
+        cutoff_str = cutoff_date.strftime("%Y-%m-%d")
+        end_str = last_day_prev_month.strftime("%Y-%m-%d")
+        report_filename = f"Tesco_Monthly_Report_{cutoff_date.strftime('%Y-%m')}.xlsx"
+        window_label = f"Previous Month ({cutoff_date.strftime('%B %Y')})"
+    else:
+        # Standard rolling days window
+        days = days_override or int(os.environ.get("DEFAULT_REPORT_DAYS", 7))
+        cutoff_date = today - timedelta(days=days)
+        end_date = today
+        
+        cutoff_str = cutoff_date.strftime("%Y-%m-%d")
+        end_str = end_date.strftime("%Y-%m-%d")
+        report_filename = f"Tesco_Rolling_Report_{end_str}.xlsx"
+        window_label = f"Rolling {days} Days"
 
     all_reviews = []
     product_summary = []
 
     log.info("═" * 65)
-    log.info("  CRANSWICK / TESCO — WEEKLY REVIEW PIPELINE")
-    log.info(f"  Report Window: {cutoff_str}  →  {today_str}  ({REPORT_WINDOW_DAYS} days)")
+    log.info("  CRANSWICK / TESCO — REVIEW PIPELINE")
+    log.info(f"  Mode: {window_label}  |  {cutoff_str}  →  {end_str}")
     log.info(f"  Products to scan: {len(products)}")
     log.info("═" * 65)
 
@@ -367,7 +369,7 @@ def run_interception_pipeline():
     # REPORT GENERATION
     # ══════════════════════════════════════════════════════════════════════════
 
-    output_filename = os.path.join(OUTPUT_DIR, f"Tesco_Weekly_Report_{today_str}.xlsx")
+    output_filename = os.path.join(OUTPUT_DIR, report_filename)
 
     # Build the reviews dataframe
     if all_reviews:
@@ -383,9 +385,9 @@ def run_interception_pipeline():
     summary_df = pd.DataFrame(product_summary)
 
     log.info("═" * 65)
-    log.info("  GENERATING WEEKLY REPORT")
-    log.info(f"  Window: {cutoff_str} → {today_str}")
-    log.info(f"  Reviews found this week: {len(df)}")
+    log.info("  GENERATING REPORT")
+    log.info(f"  Mode: {window_label} ({cutoff_str} → {end_str})")
+    log.info(f"  Reviews found: {len(df)}")
     log.info(f"  Products scanned: {len(products)}")
     log.info("═" * 65)
 
@@ -400,8 +402,8 @@ def run_interception_pipeline():
         sub_fmt    = workbook.add_format({'italic': True, 'font_size': 11, 'font_color': '#666666'})
         header_fmt = workbook.add_format({'bold': True, 'bg_color': '#00539F', 'font_color': '#FFFFFF', 'border': 1})
 
-        ws_summary.write(0, 0, "Cranswick / Tesco — Weekly Review Summary", title_fmt)
-        ws_summary.write(1, 0, f"Report generated: {today_str}  |  Window: {cutoff_str} to {today_str}  |  Products: {len(products)}  |  New reviews: {len(df)}", sub_fmt)
+        ws_summary.write(0, 0, f"Cranswick / Tesco — {window_label} Summary", title_fmt)
+        ws_summary.write(1, 0, f"Report generated: {today.strftime('%Y-%m-%d')}  |  Window: {cutoff_str} to {end_str}  |  Products: {len(products)}  |  New reviews: {len(df)}", sub_fmt)
 
         for col_num, value in enumerate(summary_df.columns):
             ws_summary.write(2, col_num, value, header_fmt)
@@ -426,8 +428,8 @@ def run_interception_pipeline():
             df.to_excel(writer, index=False, sheet_name='Reviews', startrow=2)
             ws_reviews = writer.sheets['Reviews']
 
-            ws_reviews.write(0, 0, "Cranswick / Tesco — Weekly Review Detail", title_fmt)
-            ws_reviews.write(1, 0, f"Showing reviews from {cutoff_str} to {today_str} only", sub_fmt)
+            ws_reviews.write(0, 0, f"Cranswick / Tesco — {window_label} Detail", title_fmt)
+            ws_reviews.write(1, 0, f"Showing reviews from {cutoff_str} to {end_str} only", sub_fmt)
 
             for col_num, value in enumerate(df.columns):
                 ws_reviews.write(2, col_num, value, header_fmt)
