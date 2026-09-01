@@ -1,14 +1,16 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║  CRANSWICK / TESCO — WEEKLY CUSTOMER REVIEW INTELLIGENCE PIPELINE      ║
-║  Architecture: Hybrid Network Interception (Stealth Headless Chrome)   ║
+║  Architecture: V2 Direct API Injection (Stealth Headless Chrome)       ║
 ║  Author: Cranswick Data Engineering Team                               ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 """
 
 import os
+import sys
 import json
 import re
+import logging
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -23,10 +25,14 @@ from playwright_stealth import Stealth
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR   = os.path.join(SCRIPT_DIR, "input")
 OUTPUT_DIR  = os.path.join(SCRIPT_DIR, "output")
+LOG_DIR     = os.path.join(SCRIPT_DIR, "logs")
 INPUT_FILE  = os.path.join(INPUT_DIR, "products_to_track.xlsx")
 
 # How many days back to include in the weekly report
 REPORT_WINDOW_DAYS = 7
+
+# Max retries per product if a transient error occurs
+MAX_RETRIES = 3
 
 # Fallback API key (intercepted from Tesco frontend)
 FALLBACK_API_KEY = "TvOSZJHlEk0pjniDGQFAc9Q59WGAR4dA"
@@ -34,13 +40,49 @@ FALLBACK_API_KEY = "TvOSZJHlEk0pjniDGQFAc9Q59WGAR4dA"
 # Smart Triaging Keywords
 QA_KEYWORDS = [
     'smell', 'blown', 'sick', 'plastic', 'bone', 'sour',
-    'discoloured', 'off', 'colour', 'mould', 'hair', 'foreign',
+    'discoloured', 'colour', 'mould', 'hair', 'foreign',
     'contaminated', 'rotten', 'expired', 'green', 'slime', 'slimy'
 ]
 LOGISTICS_KEYWORDS = [
     'driver', 'missing', 'substitute', 'late', 'delivery',
     'damaged', 'squashed', 'crushed', 'broken', 'torn'
 ]
+
+# Words that cause false positives with simple substring matching
+# These are checked with word-boundary regex instead
+BOUNDARY_QA_KEYWORDS = ['off']
+BOUNDARY_LOGISTICS_KEYWORDS = []
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# LOGGING SETUP
+# ══════════════════════════════════════════════════════════════════════════
+
+def setup_logging():
+    """Configure dual logging: console + rotating log file."""
+    os.makedirs(LOG_DIR, exist_ok=True)
+    log_file = os.path.join(LOG_DIR, f"pipeline_{datetime.today().strftime('%Y-%m-%d')}.log")
+
+    logger = logging.getLogger("tesco_pipeline")
+    logger.setLevel(logging.INFO)
+
+    # Prevent duplicate handlers on re-runs
+    if logger.handlers:
+        return logger
+
+    formatter = logging.Formatter("%(asctime)s  %(levelname)-8s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+
+    # Console handler
+    console = logging.StreamHandler(sys.stdout)
+    console.setFormatter(formatter)
+    logger.addHandler(console)
+
+    # File handler
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    return logger
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -51,7 +93,6 @@ def load_products():
     """Load product list from the input Excel file."""
     os.makedirs(INPUT_DIR, exist_ok=True)
     if not os.path.exists(INPUT_FILE):
-        print(f"⚠️  Input file not found. Creating template at:\n   {INPUT_FILE}")
         template_df = pd.DataFrame([
             {"NAV Code": "10011247", "Product Name": "Example Product 1", "Tesco URL": "https://www.tesco.com/shop/en-GB/products/316177140"},
             {"NAV Code": "10100822", "Product Name": "Example Product 2", "Tesco URL": "https://www.tesco.com/shop/en-GB/products/303881155"}
@@ -78,20 +119,52 @@ def triage_review(text: str) -> tuple[str, str]:
     if not text:
         return "None", ""
     text_lower = text.lower()
+
+    # Standard substring keywords
     for kw in QA_KEYWORDS:
         if kw in text_lower:
             return "🔴 Critical QA Risk", kw
     for kw in LOGISTICS_KEYWORDS:
         if kw in text_lower:
             return "🟠 Logistics Issue", kw
+
+    # Word-boundary keywords (avoids false positives like "offer", "coffee")
+    for kw in BOUNDARY_QA_KEYWORDS:
+        if re.search(rf'\b{kw}\b', text_lower):
+            return "🔴 Critical QA Risk", kw
+    for kw in BOUNDARY_LOGISTICS_KEYWORDS:
+        if re.search(rf'\b{kw}\b', text_lower):
+            return "🟠 Logistics Issue", kw
+
     return "None", ""
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# CORE INTERCEPTION ENGINE
+# GRAPHQL FETCHER
+# ══════════════════════════════════════════════════════════════════════════
+
+def fetch_reviews_page(context, tpnb, offset):
+    """Fetch a single page of reviews from the Tesco GraphQL API."""
+    payload = [{
+        "operationName": "GetReviews",
+        "extensions": {"mfeName": "mfe-pdp"},
+        "variables": {"tpnb": tpnb, "offset": offset, "count": 10},
+        "query": "query GetReviews($tpnb: String, $offset: Int, $count: Int) { reviews(tpnb: $tpnb, offset: $offset, count: $count) { info { total } entries { rating { value } summary text submissionDateTime } } }"
+    }]
+    return context.request.post(
+        "https://xapi.tesco.com/",
+        headers={"x-apikey": FALLBACK_API_KEY, "content-type": "application/json", "origin": "https://www.tesco.com"},
+        data=json.dumps(payload)
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# CORE ENGINE
 # ══════════════════════════════════════════════════════════════════════════
 
 def run_interception_pipeline():
+    log = setup_logging()
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     products = load_products()
@@ -100,13 +173,13 @@ def run_interception_pipeline():
     today_str  = datetime.today().strftime("%Y-%m-%d")
 
     all_reviews = []
-    product_summary = []  # Track per-product stats for the summary sheet
+    product_summary = []
 
-    print("═" * 65)
-    print(f"  🚀  CRANSWICK / TESCO — WEEKLY REVIEW PIPELINE")
-    print(f"  📅  Report Window: {cutoff_str}  →  {today_str}  ({REPORT_WINDOW_DAYS} days)")
-    print(f"  📦  Products to scan: {len(products)}")
-    print("═" * 65)
+    log.info("═" * 65)
+    log.info("  CRANSWICK / TESCO — WEEKLY REVIEW PIPELINE")
+    log.info(f"  Report Window: {cutoff_str}  →  {today_str}  ({REPORT_WINDOW_DAYS} days)")
+    log.info(f"  Products to scan: {len(products)}")
+    log.info("═" * 65)
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
@@ -129,7 +202,7 @@ def run_interception_pipeline():
         page = context.new_page()
         Stealth().apply_stealth_sync(page)
 
-        # V2 OPTIMIZATION: Block all heavy visual resources for blazing fast page loads
+        # V2: Block heavy resources for blazing fast page loads
         page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "media", "font", "stylesheet"] else route.continue_())
 
         for idx, product in enumerate(products, 1):
@@ -137,124 +210,127 @@ def run_interception_pipeline():
             nav  = product.get("NAV Code", "N/A")
             url  = str(product.get("Tesco URL", ""))
 
-            print(f"\n[{idx}/{len(products)}] 📦 {name}")
+            log.info(f"[{idx}/{len(products)}] {name}")
 
             if not url.startswith("http"):
-                print(f"   ❌ SKIP: Invalid URL (not a link). Check your Excel file.")
+                log.warning(f"  SKIP: Invalid URL. Check your Excel file.")
                 product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "N/A", "Weekly Reviews": 0, "Status": "❌ Invalid URL"})
                 continue
 
             intercepted_data = []
-            
-            try:
-                # 1. Load HTML only (milliseconds)
-                page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                
-                # 2. Extract TPNB instantly from raw HTML
-                html = page.content()
-                tpnb_match = re.search(r'tpnb[^\d]*(\d{5,9})', html, re.IGNORECASE)
-                
-                if not tpnb_match:
-                    print(f"   ⚠️ Could not find internal TPNB ID on page. Skipping.")
-                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": "⚠️ No TPNB found"})
-                    continue
-                    
-                tpnb = tpnb_match.group(1)
-                
-                # 3. Direct API Injection (Bypasses scrolling/waiting entirely)
-                # First request to get offset 0 and the Total count
-                def fetch_graphql(offset):
-                    payload = [{
-                        "operationName": "GetReviews",
-                        "extensions": {"mfeName": "mfe-pdp"},
-                        "variables": {"tpnb": tpnb, "offset": offset, "count": 10},
-                        "query": "query GetReviews($tpnb: String, $offset: Int, $count: Int) { reviews(tpnb: $tpnb, offset: $offset, count: $count) { info { total } entries { rating { value } summary text submissionDateTime } } }"
-                    }]
-                    return context.request.post(
-                        "https://xapi.tesco.com/",
-                        headers={"x-apikey": FALLBACK_API_KEY, "content-type": "application/json", "origin": "https://www.tesco.com"},
-                        data=json.dumps(payload)
-                    )
+            success = False
 
-                resp = fetch_graphql(0)
-                if not resp.ok:
-                    print(f"   ❌ API Rejected request (Status {resp.status}). Akamai block likely.")
-                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": f"❌ API Block ({resp.status})"})
-                    continue
-                    
-                data = resp.json()
-                if not data or not data[0].get('data', {}).get('reviews'):
-                    print(f"   — No reviews available for this product.")
-                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": 0, "Weekly Reviews": 0, "Status": "— No reviews"})
-                    continue
-                
-                total = data[0]['data']['reviews']['info'].get('total', 0)
-                entries = data[0]['data']['reviews'].get('entries', [])
-                intercepted_data.extend(entries)
-                
-                # 4. Fetch remaining pages in background
-                if total > 10:
-                    for offset in range(10, total, 10):
-                        try:
-                            resp = fetch_graphql(offset)
-                            if resp.ok:
-                                offset_data = resp.json()
-                                if offset_data and offset_data[0].get('data'):
-                                    batch = offset_data[0]['data']['reviews'].get('entries', [])
-                                    intercepted_data.extend(batch)
-                                    
-                                    # EARLY EXIT: Check if entire batch is older than 7 days
-                                    old_count = sum(1 for e in batch if (
-                                        datetime.strptime(e.get('submissionDateTime', '')[:10], "%Y-%m-%d") < cutoff_date 
-                                        if e.get('submissionDateTime') else False
-                                    ))
-                                    if batch and old_count == len(batch):
-                                        break
-                        except Exception:
-                            pass
-                            
-                # 5. Filter to weekly window and triage
-                weekly_count = 0
-                for entry in intercepted_data:
-                    date_str = entry.get('submissionDateTime', '')[:10]
-                    try:
-                        review_date = datetime.strptime(date_str, "%Y-%m-%d")
-                        if review_date < cutoff_date:
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    # 1. Load HTML only (fast — images/css blocked)
+                    page.goto(url, wait_until="domcontentloaded", timeout=30000)
+
+                    # 2. Extract TPNB instantly from raw HTML
+                    html = page.content()
+                    tpnb_match = re.search(r'tpnb[^\d]*(\d{5,9})', html, re.IGNORECASE)
+
+                    if not tpnb_match:
+                        log.warning(f"  Could not find internal TPNB ID on page. Skipping.")
+                        product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": "⚠️ No TPNB found"})
+                        success = True  # Not a transient error, don't retry
+                        break
+
+                    tpnb = tpnb_match.group(1)
+
+                    # 3. Direct API Injection — first page
+                    resp = fetch_reviews_page(context, tpnb, 0)
+                    if not resp.ok:
+                        log.warning(f"  API rejected (Status {resp.status}). Attempt {attempt}/{MAX_RETRIES}.")
+                        if attempt < MAX_RETRIES:
+                            page.wait_for_timeout(5000 * attempt)
                             continue
-                    except Exception:
-                        continue
+                        product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": f"❌ API Block ({resp.status})"})
+                        success = True
+                        break
 
-                    rating = entry.get('rating', {}).get('value', 'N/A')
-                    title  = entry.get('summary', '')
-                    text   = entry.get('text', '')
-                    category, trigger = triage_review(f"{title} {text}")
+                    data = resp.json()
+                    if not data or not data[0].get('data', {}).get('reviews'):
+                        log.info(f"  No reviews available for this product.")
+                        product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": 0, "Weekly Reviews": 0, "Status": "— No reviews"})
+                        success = True
+                        break
 
-                    sort_priority = 3
-                    if "QA" in category:
-                        sort_priority = 1
-                    elif rating == 1:
-                        sort_priority = 2
+                    total = data[0]['data']['reviews']['info'].get('total', 0)
+                    entries = data[0]['data']['reviews'].get('entries', [])
+                    intercepted_data.extend(entries)
 
-                    all_reviews.append({
-                        "_sort": sort_priority,
-                        "NAV Code": nav,
-                        "Product Name": name,
-                        "Star Rating": rating,
-                        "Review Date": date_str,
-                        "Review Title": title,
-                        "Review Text": text,
-                        "Triage Category": category,
-                        "Trigger Word": trigger
-                    })
-                    weekly_count += 1
+                    # 4. Fetch remaining pages
+                    if total > 10:
+                        for offset in range(10, total, 10):
+                            try:
+                                resp = fetch_reviews_page(context, tpnb, offset)
+                                if resp.ok:
+                                    offset_data = resp.json()
+                                    if offset_data and offset_data[0].get('data'):
+                                        batch = offset_data[0]['data']['reviews'].get('entries', [])
+                                        intercepted_data.extend(batch)
 
-                status = f"✅ {weekly_count} new" if weekly_count > 0 else "— No new reviews"
-                print(f"   Total: {total}  |  This week: {weekly_count}  |  {status}")
-                product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": total, "Weekly Reviews": weekly_count, "Status": status})
+                                        # EARLY EXIT: if entire batch is older than cutoff
+                                        old_count = 0
+                                        for e in batch:
+                                            try:
+                                                d = datetime.strptime(e.get('submissionDateTime', '')[:10], "%Y-%m-%d")
+                                                if d < cutoff_date:
+                                                    old_count += 1
+                                            except Exception:
+                                                pass
+                                        if batch and old_count == len(batch):
+                                            break
+                            except Exception:
+                                pass
 
-            except Exception as e:
-                print(f"   ❌ Error: {e}")
-                product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": f"❌ Error"})
+                    # 5. Filter to weekly window and triage
+                    weekly_count = 0
+                    for entry in intercepted_data:
+                        date_str = entry.get('submissionDateTime', '')[:10]
+                        try:
+                            review_date = datetime.strptime(date_str, "%Y-%m-%d")
+                            if review_date < cutoff_date:
+                                continue
+                        except Exception:
+                            continue
+
+                        rating = entry.get('rating', {}).get('value', 'N/A')
+                        title  = entry.get('summary', '')
+                        text   = entry.get('text', '')
+                        category, trigger = triage_review(f"{title} {text}")
+
+                        sort_priority = 3
+                        if "QA" in category:
+                            sort_priority = 1
+                        elif rating == 1:
+                            sort_priority = 2
+
+                        all_reviews.append({
+                            "_sort": sort_priority,
+                            "NAV Code": nav,
+                            "Product Name": name,
+                            "Star Rating": rating,
+                            "Review Date": date_str,
+                            "Review Title": title,
+                            "Review Text": text,
+                            "Triage Category": category,
+                            "Trigger Word": trigger
+                        })
+                        weekly_count += 1
+
+                    status = f"✅ {weekly_count} new" if weekly_count > 0 else "— No new reviews"
+                    log.info(f"  Total: {total}  |  This week: {weekly_count}  |  {status}")
+                    product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": total, "Weekly Reviews": weekly_count, "Status": status})
+                    success = True
+                    break
+
+                except Exception as e:
+                    log.error(f"  Error (attempt {attempt}/{MAX_RETRIES}): {e}")
+                    if attempt < MAX_RETRIES:
+                        page.wait_for_timeout(5000 * attempt)
+                    else:
+                        product_summary.append({"NAV Code": nav, "Product Name": name, "Total Reviews": "?", "Weekly Reviews": 0, "Status": "❌ Error"})
 
         browser.close()
 
@@ -277,12 +353,12 @@ def run_interception_pipeline():
     # Build the summary dataframe
     summary_df = pd.DataFrame(product_summary)
 
-    print(f"\n{'═' * 65}")
-    print(f"  📊  GENERATING WEEKLY REPORT")
-    print(f"  📅  Window: {cutoff_str} → {today_str}")
-    print(f"  📝  Reviews found this week: {len(df)}")
-    print(f"  📦  Products scanned: {len(products)}")
-    print(f"{'═' * 65}")
+    log.info("═" * 65)
+    log.info("  GENERATING WEEKLY REPORT")
+    log.info(f"  Window: {cutoff_str} → {today_str}")
+    log.info(f"  Reviews found this week: {len(df)}")
+    log.info(f"  Products scanned: {len(products)}")
+    log.info("═" * 65)
 
     with pd.ExcelWriter(output_filename, engine='xlsxwriter') as writer:
         workbook = writer.book
@@ -359,10 +435,9 @@ def run_interception_pipeline():
             ws_reviews = workbook.add_worksheet('Reviews')
             ws_reviews.write(0, 0, "No new reviews found in the past 7 days.", title_fmt)
 
-    print(f"\n  ✅  Report saved to: {output_filename}")
-    print(f"  📋  Sheet 1 — 'Summary': {len(products)} products scanned")
-    print(f"  📋  Sheet 2 — 'Reviews': {len(df)} new reviews this week")
-    print()
+    log.info(f"  Report saved to: {output_filename}")
+    log.info(f"  Sheet 1 — 'Summary': {len(products)} products scanned")
+    log.info(f"  Sheet 2 — 'Reviews': {len(df)} new reviews this week")
 
 
 if __name__ == "__main__":

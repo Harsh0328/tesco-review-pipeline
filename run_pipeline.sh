@@ -11,7 +11,9 @@ cd "$(dirname "$0")"
 
 # Load Environment Variables (SMTP Passwords, etc.)
 if [ -f .env ]; then
-    export $(cat .env | grep -v '#' | awk '/=/ {print $1}')
+    set -a
+    source .env
+    set +a
 fi
 
 # Execute the Python Pipeline (adjust python3 path if using virtual environments)

@@ -11,7 +11,7 @@ cd /d "%~dp0"
 
 REM Load Environment Variables (SMTP Passwords, etc.)
 if exist ".env" (
-    for /f "usebackq tokens=1,* delims==" %%A in (".env") do (
+    for /f "usebackq eol=# tokens=1,* delims==" %%A in (".env") do (
         set %%A=%%B
     )
 )
