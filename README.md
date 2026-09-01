@@ -1,7 +1,7 @@
-# Cranswick / Tesco — Weekly Review Intelligence Pipeline
+# Cranswick / Tesco — Review Intelligence Pipeline
 
 ## Overview
-This pipeline automatically extracts customer reviews from all Cranswick products listed on Tesco.com, triages them for Quality Assurance (QA) risks and Logistics issues, and generates a professional weekly Excel report.
+This pipeline automatically extracts customer reviews from all Cranswick products listed on Tesco.com, triages them for Quality Assurance (QA) risks and Logistics issues, and generates professional Excel reports. It supports both **Rolling (e.g. 7-day)** and **Strict Calendar Month** reporting.
 
 ## Architecture (V2)
 The engine uses a **V2 Direct API Injection** approach:
@@ -9,7 +9,7 @@ The engine uses a **V2 Direct API Injection** approach:
 2. Blocks all heavy visual resources (images, CSS) for instant page loads
 3. Extracts the internal TPNB ID instantly using regex from the raw HTML
 4. Directly injects GraphQL API calls into the browser context to fetch reviews
-5. Filters to the past 7 days, triages, exports to Excel, and emails stakeholders
+5. Filters to the date window, triages, exports to Excel, and emails stakeholders
 
 ## Quick Start
 
@@ -20,9 +20,11 @@ playwright install chromium
 ```
 
 ### Usage
-1. Open `input/products_to_track.xlsx` and ensure your product list is up to date
-2. Setup your `.env` file with SMTP credentials (see `.env.example`)
+1. Open `input/products_to_track.xlsx` and ensure your product list is up to date.
+2. Setup your `.env` file with SMTP credentials and default lookback days (see `.env.example`).
 3. Run the automated pipeline (generates report AND sends email):
+
+**Weekly / Rolling Report:**
 ```bash
 # On Linux/Mac
 ./run_pipeline.sh
@@ -31,11 +33,14 @@ playwright install chromium
 run_pipeline.bat
 ```
 
-### Configuration
-Edit the top of `interceptor_engine.py` to adjust:
-- `REPORT_WINDOW_DAYS` — Number of days to include (default: 7)
-- `MAX_RETRIES` — Number of retries on transient network errors (default: 3)
-- `QA_KEYWORDS` — Words that flag a review as a Critical QA Risk
+**Monthly Report (Previous Calendar Month):**
+```bash
+# On Linux/Mac
+./run_pipeline_monthly.sh
+
+# On Windows
+run_pipeline_monthly.bat
+```
 
 ## Output & Logging
 - **Excel Reports:** Saved in the `output/` folder.
@@ -44,15 +49,15 @@ Edit the top of `interceptor_engine.py` to adjust:
 ## File Structure
 ```
 Production_Code/
-├── run_pipeline.bat         # Windows Task Scheduler entry point
-├── run_pipeline.sh          # Linux/Mac Cron entry point
-├── run_pipeline_batch.py    # Master script (Scrape + Email)
-├── interceptor_engine.py    # Core V2 Playwright scraping engine
-├── email_delivery.py        # Automated SMTP distribution module
-├── requirements.txt         # Python dependencies
-├── DEPLOYMENT_GUIDE.md      # IT setup instructions
+├── run_pipeline.bat / .sh           # Windows/Linux Weekly Entry Point
+├── run_pipeline_monthly.bat / .sh   # Windows/Linux Monthly Entry Point
+├── run_pipeline_batch.py            # Master script (Scrape + Email)
+├── interceptor_engine.py            # Core V2 Playwright scraping engine
+├── email_delivery.py                # Automated SMTP distribution module
+├── requirements.txt                 # Python dependencies
+├── DEPLOYMENT_GUIDE.md              # IT setup instructions
 ├── input/
-│   └── products_to_track.xlsx   # Product list to track
+│   └── products_to_track.xlsx       # Product list to track
 └── output/
-    └── Tesco_Weekly_Report_YYYY-MM-DD.xlsx
+    └── Tesco_..._Report.xlsx
 ```
